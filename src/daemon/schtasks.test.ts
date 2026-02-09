@@ -166,17 +166,26 @@ describe("readScheduledTaskCommand", () => {
     try {
       const scriptPath = path.join(tmpDir, ".openclaw", "gateway.cmd");
       await fs.mkdir(path.dirname(scriptPath), { recursive: true });
-      // Use forward slashes which work in Windows cmd and avoid escape parsing issues
+      // Keep backslashes to mirror real Windows scheduled task scripts.
       await fs.writeFile(
         scriptPath,
-        ["@echo off", '"C:/Program Files/Node/node.exe" gateway.js'].join("\r\n"),
+        [
+          "@echo off",
+          '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\thiag\\Open Clowd versão em uso\\openclaw\\dist\\index.js" gateway --port 18789',
+        ].join("\r\n"),
         "utf8",
       );
 
       const env = { USERPROFILE: tmpDir, OPENCLAW_PROFILE: "default" };
       const result = await readScheduledTaskCommand(env);
       expect(result).toEqual({
-        programArguments: ["C:/Program Files/Node/node.exe", "gateway.js"],
+        programArguments: [
+          "C:\\Program Files\\nodejs\\node.exe",
+          "C:\\Users\\thiag\\Open Clowd versão em uso\\openclaw\\dist\\index.js",
+          "gateway",
+          "--port",
+          "18789",
+        ],
       });
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });

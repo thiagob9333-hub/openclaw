@@ -59,16 +59,12 @@ function parseCommandLine(value: string): string[] {
   const args: string[] = [];
   let current = "";
   let inQuotes = false;
-  let escapeNext = false;
 
-  for (const char of value) {
-    if (escapeNext) {
-      current += char;
-      escapeNext = false;
-      continue;
-    }
-    if (char === "\\") {
-      escapeNext = true;
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value[i];
+    if (char === "\\" && value[i + 1] === '"') {
+      current += '"';
+      i += 1;
       continue;
     }
     if (char === '"') {

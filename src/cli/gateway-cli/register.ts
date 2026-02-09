@@ -129,6 +129,9 @@ export function registerGatewayCli(program: Command) {
           `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/gateway", "docs.openclaw.ai/cli/gateway")}\n`,
       ),
   );
+  // Ensure options after a subcommand are parsed by that subcommand.
+  // This avoids parent `gateway --force` swallowing `gateway install --force`.
+  gateway.enablePositionalOptions(true);
 
   addGatewayRunCommand(
     gateway.command("run").description("Run the WebSocket Gateway (foreground)"),
@@ -161,8 +164,12 @@ export function registerGatewayCli(program: Command) {
     .option("--token <token>", "Gateway token (token auth)")
     .option("--force", "Reinstall/overwrite if already installed", false)
     .option("--json", "Output JSON", false)
-    .action(async (opts) => {
-      await runDaemonInstall(opts);
+    .action(async (opts, cmd: Command) => {
+      const parentForce = Boolean(cmd.parent?.opts?.().force);
+      await runDaemonInstall({
+        ...opts,
+        force: Boolean(opts.force || parentForce),
+      });
     });
 
   gateway
