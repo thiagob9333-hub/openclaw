@@ -331,6 +331,36 @@ function isTaskNotRunning(res: { stdout: string; stderr: string; code: number })
   return detail.includes("not running");
 }
 
+function normalizeTaskStatus(value: string | undefined): string {
+  if (!value) {
+    return "";
+  }
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+function isTaskRunningState(status: string | undefined, lastRunResult: string | undefined): boolean {
+  const normalized = normalizeTaskStatus(status);
+  if (normalized === "running") {
+    return true;
+  }
+  if (normalized.includes("em execucao")) {
+    return true;
+  }
+  const rawResult = (lastRunResult ?? "").toLowerCase();
+  if (rawResult.includes("0x41301")) {
+    return true;
+  }
+  const numeric = Number(rawResult.replace(/[^\d]/g, ""));
+  if (Number.isFinite(numeric) && numeric === 267009) {
+    return true;
+  }
+  return false;
+}
+
 export async function stopScheduledTask({
   stdout,
   env,
@@ -396,8 +426,11 @@ export async function readScheduledTaskRuntime(
     };
   }
   const parsed = parseSchtasksQuery(res.stdout || "");
-  const statusRaw = parsed.status?.toLowerCase();
-  const status = statusRaw === "running" ? "running" : statusRaw ? "stopped" : "unknown";
+  const status = isTaskRunningState(parsed.status, parsed.lastRunResult)
+    ? "running"
+    : parsed.status
+      ? "stopped"
+      : "unknown";
   return {
     status,
     state: parsed.status,
