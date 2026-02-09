@@ -23,7 +23,7 @@ function tryRelative(root: string, filePath: string): string | null {
   if (path.isAbsolute(rel)) {
     return null;
   }
-  return rel;
+  return rel.replace(/\\/g, "/");
 }
 
 export function resolvePluginSourceRoots(params: { workspaceDir?: string }): PluginSourceRoots {

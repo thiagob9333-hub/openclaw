@@ -1,7 +1,4 @@
-import { ConsoleLogger, LogService } from "@vector-im/matrix-bot-sdk";
-
 let matrixSdkLoggingConfigured = false;
-const matrixSdkBaseLogger = new ConsoleLogger();
 
 function shouldSuppressMatrixHttpNotFound(module: string, messageOrObject: unknown[]): boolean {
   if (module !== "MatrixHttpClient") {
@@ -15,11 +12,13 @@ function shouldSuppressMatrixHttpNotFound(module: string, messageOrObject: unkno
   });
 }
 
-export function ensureMatrixSdkLoggingConfigured(): void {
+export async function ensureMatrixSdkLoggingConfigured(): Promise<void> {
   if (matrixSdkLoggingConfigured) {
     return;
   }
   matrixSdkLoggingConfigured = true;
+  const { ConsoleLogger, LogService } = await import("@vector-im/matrix-bot-sdk");
+  const matrixSdkBaseLogger = new ConsoleLogger();
 
   LogService.setLogger({
     trace: (module, ...messageOrObject) => matrixSdkBaseLogger.trace(module, ...messageOrObject),

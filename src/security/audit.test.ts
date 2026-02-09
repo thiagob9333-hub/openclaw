@@ -850,9 +850,13 @@ describe("security audit", () => {
     const includePath = path.join(stateDir, "extra.json5");
     await fs.writeFile(includePath, "{ logging: { redactSensitive: 'off' } }\n", "utf-8");
     if (isWindows) {
-      // Grant "Everyone" write access to trigger the perms_writable check on Windows
+      // Best effort only. The test below stubs ACL parsing via execIcacls.
       const { execSync } = await import("node:child_process");
-      execSync(`icacls "${includePath}" /grant Everyone:W`, { stdio: "ignore" });
+      try {
+        execSync(`icacls "${includePath}" /grant *S-1-1-0:(W)`, { stdio: "ignore" });
+      } catch {
+        // Keep test deterministic across localized or restricted Windows environments.
+      }
     } else {
       await fs.chmod(includePath, 0o644);
     }

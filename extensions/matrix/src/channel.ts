@@ -23,9 +23,8 @@ import {
   resolveMatrixAccount,
   type ResolvedMatrixAccount,
 } from "./matrix/accounts.js";
-import { resolveMatrixAuth } from "./matrix/client.js";
+import { resolveMatrixAuth } from "./matrix/client/config.js";
 import { normalizeMatrixAllowList, normalizeMatrixUserId } from "./matrix/monitor/allowlist.js";
-import { probeMatrix } from "./matrix/probe.js";
 import { sendMessageMatrix } from "./matrix/send.js";
 import { matrixOnboardingAdapter } from "./onboarding.js";
 import { matrixOutbound } from "./outbound.js";
@@ -386,6 +385,7 @@ export const matrixPlugin: ChannelPlugin<ResolvedMatrixAccount> = {
     probeAccount: async ({ timeoutMs, cfg }) => {
       try {
         const auth = await resolveMatrixAuth({ cfg: cfg as CoreConfig });
+        const { probeMatrix } = await import("./matrix/probe.js");
         return await probeMatrix({
           homeserver: auth.homeserver,
           accessToken: auth.accessToken,

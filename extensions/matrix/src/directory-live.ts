@@ -1,5 +1,5 @@
 import type { ChannelDirectoryEntry } from "openclaw/plugin-sdk";
-import { resolveMatrixAuth } from "./matrix/client.js";
+import { resolveMatrixAuth } from "./matrix/client/config.js";
 
 type MatrixUserResult = {
   user_id?: string;

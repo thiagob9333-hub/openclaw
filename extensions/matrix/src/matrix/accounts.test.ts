@@ -2,6 +2,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CoreConfig } from "../types.js";
 import { resolveMatrixAccount } from "./accounts.js";
 
+vi.mock("@vector-im/matrix-bot-sdk", () => ({
+  ConsoleLogger: class {
+    trace() {}
+    debug() {}
+    info() {}
+    warn() {}
+    error() {}
+  },
+  LogService: {
+    setLogger() {},
+  },
+  MatrixClient: class {
+    async getUserId() {
+      return "@mock:example.org";
+    }
+  },
+}));
+
 vi.mock("./credentials.js", () => ({
   loadMatrixCredentials: () => null,
   credentialsMatchConfig: () => false,

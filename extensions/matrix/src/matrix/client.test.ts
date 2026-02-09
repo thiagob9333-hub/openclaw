@@ -1,6 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CoreConfig } from "../types.js";
-import { resolveMatrixConfig } from "./client.js";
+import { resolveMatrixConfig } from "./client/config.js";
+
+vi.mock("@vector-im/matrix-bot-sdk", () => ({
+  ConsoleLogger: class {
+    trace() {}
+    debug() {}
+    info() {}
+    warn() {}
+    error() {}
+  },
+  LogService: {
+    setLogger() {},
+  },
+  MatrixClient: class {
+    async getUserId() {
+      return "@mock:example.org";
+    }
+  },
+}));
 
 describe("resolveMatrixConfig", () => {
   it("prefers config over env", () => {

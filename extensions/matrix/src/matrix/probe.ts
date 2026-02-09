@@ -1,4 +1,5 @@
-import { createMatrixClient, isBunRuntime } from "./client.js";
+import { createMatrixClient } from "./client/create-client.js";
+import { isBunRuntime } from "./client/runtime.js";
 
 export type MatrixProbe = {
   ok: boolean;

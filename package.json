@@ -213,5 +213,9 @@
       "protobufjs",
       "sharp"
     ]
+  },
+  "volta": {
+    "node": "22.22.0",
+    "pnpm": "10.29.2"
   }
 }
