@@ -168,10 +168,14 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
 
   const runtimeLine = formatRuntimeStatus(service.runtime);
+  const stoppedButRpcReachable =
+    service.loaded && service.runtime?.status === "stopped" && rpc?.ok === true;
   if (runtimeLine) {
     const runtimeStatus = service.runtime?.status ?? "unknown";
     const runtimeColor =
-      runtimeStatus === "running"
+      stoppedButRpcReachable
+        ? theme.warn
+        : runtimeStatus === "running"
         ? theme.success
         : runtimeStatus === "stopped"
           ? theme.error
@@ -219,6 +223,13 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
     for (const hint of renderRuntimeHints(service.runtime)) {
       defaultRuntime.error(errorText(hint));
     }
+  } else if (stoppedButRpcReachable) {
+    defaultRuntime.log(
+      warnText(
+        "Service scheduler reports stopped, but Gateway RPC is reachable (likely detached/background runtime).",
+      ),
+    );
+    spacer();
   } else if (service.loaded && service.runtime?.status === "stopped") {
     defaultRuntime.error(
       errorText("Service is loaded but not running (likely exited immediately)."),

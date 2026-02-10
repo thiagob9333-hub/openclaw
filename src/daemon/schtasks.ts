@@ -40,6 +40,15 @@ function quoteCmdArg(value: string): string {
   return `"${value.replace(/"/g, '\\"')}"`;
 }
 
+function hasNonAscii(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    if (value.charCodeAt(i) > 0x7f) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function resolveTaskUser(env: Record<string, string | undefined>): string | null {
   const username = env.USERNAME || env.USER || env.LOGNAME;
   if (!username) {
@@ -120,6 +129,11 @@ export async function readScheduledTaskCommand(env: Record<string, string | unde
         }
         continue;
       }
+      // Some Windows consoles/task hosts default to a non-UTF-8 codepage.
+      // We optionally emit a `chcp 65001 >nul` prologue to preserve Unicode paths.
+      if (/^chcp\s+\d+/i.test(line)) {
+        continue;
+      }
       if (line.toLowerCase().startsWith("cd /d ")) {
         workingDirectory = line.slice("cd /d ".length).trim().replace(/^"|"$/g, "");
         continue;
@@ -178,6 +192,13 @@ function buildTaskScript({
   const lines: string[] = ["@echo off"];
   if (description?.trim()) {
     lines.push(`rem ${description.trim()}`);
+  }
+  const needsUtf8Codepage =
+    programArguments.some(hasNonAscii) ||
+    (workingDirectory ? hasNonAscii(workingDirectory) : false) ||
+    Object.values(environment ?? {}).some((value) => !!value && hasNonAscii(value));
+  if (needsUtf8Codepage) {
+    lines.push("chcp 65001 >nul");
   }
   if (workingDirectory) {
     lines.push(`cd /d ${quoteCmdArg(workingDirectory)}`);
@@ -338,12 +359,17 @@ function normalizeTaskStatus(value: string | undefined): string {
     .trim();
 }
 
-function isTaskRunningState(status: string | undefined, lastRunResult: string | undefined): boolean {
+function isTaskRunningState(
+  status: string | undefined,
+  lastRunResult: string | undefined,
+): boolean {
   const normalized = normalizeTaskStatus(status);
   if (normalized === "running") {
     return true;
   }
-  if (normalized.includes("em execucao")) {
+  // Windows localized output can arrive mangled (e.g. "Em execu��o").
+  // Match a stable prefix instead of relying on full accent-preserved words.
+  if (normalized.includes("em exec")) {
     return true;
   }
   const rawResult = (lastRunResult ?? "").toLowerCase();

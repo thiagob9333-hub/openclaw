@@ -201,6 +201,32 @@ describe("daemon-cli coverage", () => {
     );
   });
 
+  it("does not report false stopped-runtime error when RPC probe is healthy", async () => {
+    runtimeLogs.length = 0;
+    runtimeErrors.length = 0;
+    callGateway.mockClear();
+    serviceReadRuntime.mockResolvedValueOnce({
+      status: "stopped",
+      state: "Pronto",
+      lastRunResult: "0x0",
+    });
+
+    const { registerDaemonCli } = await import("./daemon-cli.js");
+    const program = new Command();
+    program.exitOverride();
+    registerDaemonCli(program);
+
+    await program.parseAsync(["daemon", "status"], { from: "user" });
+
+    expect(callGateway).toHaveBeenCalledTimes(1);
+    expect(runtimeErrors.join("\n")).not.toContain(
+      "Service is loaded but not running (likely exited immediately).",
+    );
+    expect(runtimeLogs.join("\n")).toContain(
+      "Service scheduler reports stopped, but Gateway RPC is reachable",
+    );
+  });
+
   it("installs the daemon when requested", async () => {
     serviceIsLoaded.mockResolvedValueOnce(false);
     serviceInstall.mockClear();

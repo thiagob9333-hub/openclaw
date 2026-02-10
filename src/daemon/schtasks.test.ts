@@ -192,6 +192,37 @@ describe("readScheduledTaskCommand", () => {
     }
   });
 
+  it("ignores UTF-8 codepage preamble before command", async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
+    try {
+      const scriptPath = path.join(tmpDir, ".openclaw", "gateway.cmd");
+      await fs.mkdir(path.dirname(scriptPath), { recursive: true });
+      await fs.writeFile(
+        scriptPath,
+        [
+          "@echo off",
+          "chcp 65001 >nul",
+          '"C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\thiag\\Open Clowd versão em uso\\openclaw\\dist\\index.js" gateway --port 18789',
+        ].join("\r\n"),
+        "utf8",
+      );
+
+      const env = { USERPROFILE: tmpDir, OPENCLAW_PROFILE: "default" };
+      const result = await readScheduledTaskCommand(env);
+      expect(result).toEqual({
+        programArguments: [
+          "C:\\Program Files\\nodejs\\node.exe",
+          "C:\\Users\\thiag\\Open Clowd versão em uso\\openclaw\\dist\\index.js",
+          "gateway",
+          "--port",
+          "18789",
+        ],
+      });
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it("returns null when script does not exist", async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-schtasks-test-"));
     try {
