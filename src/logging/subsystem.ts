@@ -194,12 +194,27 @@ function writeConsoleLine(level: LogLevel, line: string) {
       ? line.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "?").replace(/[\uD800-\uDFFF]/g, "?")
       : line;
   const sink = loggingState.rawConsole ?? console;
+  const emit = (
+    writer: ((line: string) => void) | undefined,
+    fallback: (line: string) => void,
+    output: string,
+  ) => {
+    try {
+      (writer ?? fallback)(output);
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === "EPIPE" || code === "EIO") {
+        return;
+      }
+      throw err;
+    }
+  };
   if (loggingState.forceConsoleToStderr || level === "error" || level === "fatal") {
-    (sink.error ?? console.error)(sanitized);
+    emit(sink.error, console.error, sanitized);
   } else if (level === "warn") {
-    (sink.warn ?? console.warn)(sanitized);
+    emit(sink.warn, console.warn, sanitized);
   } else {
-    (sink.log ?? console.log)(sanitized);
+    emit(sink.log, console.log, sanitized);
   }
 }
 

@@ -96,11 +96,58 @@ async function writeJSONAtomic(filePath: string, value: unknown) {
   } catch {
     // best-effort
   }
-  await fs.rename(tmp, filePath);
+  await replaceFileAtomic(tmp, filePath);
   try {
     await fs.chmod(filePath, 0o600);
   } catch {
     // best-effort
+  }
+}
+
+const WINDOWS_RENAME_RETRY_CODES = new Set(["EPERM", "EACCES", "EBUSY"]);
+
+function shouldRetryWindowsRename(err: unknown): boolean {
+  if (process.platform !== "win32") {
+    return false;
+  }
+  const code = (err as { code?: string })?.code;
+  return !!code && WINDOWS_RENAME_RETRY_CODES.has(code);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function replaceFileAtomic(tmpPath: string, finalPath: string): Promise<void> {
+  try {
+    await fs.rename(tmpPath, finalPath);
+    return;
+  } catch (err) {
+    if (!shouldRetryWindowsRename(err)) {
+      throw err;
+    }
+  }
+
+  let lastError: unknown;
+  for (const waitMs of [25, 50, 100, 200, 400]) {
+    await sleep(waitMs);
+    try {
+      await fs.rename(tmpPath, finalPath);
+      return;
+    } catch (err) {
+      lastError = err;
+      if (!shouldRetryWindowsRename(err)) {
+        throw err;
+      }
+    }
+  }
+
+  try {
+    await fs.copyFile(tmpPath, finalPath);
+    await fs.unlink(tmpPath);
+    return;
+  } catch (err) {
+    throw lastError ?? err;
   }
 }
 

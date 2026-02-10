@@ -31,11 +31,13 @@ const WORLD_PRINCIPALS = new Set([
 const TRUSTED_BASE = new Set([
   "nt authority\\system",
   "system",
+  "autoridade nt\\sistema",
   "builtin\\administrators",
+  "builtin\\administradores",
   "creator owner",
 ]);
 const WORLD_SUFFIXES = ["\\users", "\\authenticated users"];
-const TRUSTED_SUFFIXES = ["\\administrators", "\\system"];
+const TRUSTED_SUFFIXES = ["\\administrators", "\\administradores", "\\system", "\\sistema"];
 
 const normalize = (value: string) => value.trim().toLowerCase();
 

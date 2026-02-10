@@ -141,6 +141,21 @@ Successfully processed 1 files`;
       expect(summary.untrustedGroup).toHaveLength(0);
     });
 
+    it("classifies localized SYSTEM principal as trusted", () => {
+      const entries: WindowsAclEntry[] = [
+        {
+          principal: "AUTORIDADE NT\\SISTEMA",
+          rights: ["F"],
+          rawRights: "(F)",
+          canRead: true,
+          canWrite: true,
+        },
+      ];
+      const summary = summarizeWindowsAcl(entries);
+      expect(summary.trusted).toHaveLength(1);
+      expect(summary.untrustedGroup).toHaveLength(0);
+    });
+
     it("classifies world principals", () => {
       const entries: WindowsAclEntry[] = [
         {
