@@ -22,6 +22,7 @@ const children = new Set();
 const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
 const isMacOS = process.platform === "darwin" || process.env.RUNNER_OS === "macOS";
 const isWindows = process.platform === "win32" || process.env.RUNNER_OS === "Windows";
+const isWindowsLocal = isWindows && !isCI;
 const isWindowsCi = isCI && isWindows;
 const shardOverride = Number.parseInt(process.env.OPENCLAW_TEST_SHARDS ?? "", 10);
 const shardCount = isWindowsCi
@@ -36,15 +37,19 @@ const passthroughArgs =
 const overrideWorkers = Number.parseInt(process.env.OPENCLAW_TEST_WORKERS ?? "", 10);
 const resolvedOverride =
   Number.isFinite(overrideWorkers) && overrideWorkers > 0 ? overrideWorkers : null;
-const parallelRuns = runs.filter((entry) => entry.name !== "gateway");
-const serialRuns = runs.filter((entry) => entry.name === "gateway");
+const shouldRunSerial = isWindowsLocal;
+const parallelRuns = shouldRunSerial ? [] : runs.filter((entry) => entry.name !== "gateway");
+const serialRuns = shouldRunSerial ? runs : runs.filter((entry) => entry.name === "gateway");
 const localWorkers = Math.max(4, Math.min(16, os.cpus().length));
 const parallelCount = Math.max(1, parallelRuns.length);
 const perRunWorkers = Math.max(1, Math.floor(localWorkers / parallelCount));
 const macCiWorkers = isCI && isMacOS ? 1 : perRunWorkers;
+const windowsLocalWorkers = 2;
 // Keep worker counts predictable for local runs; trim macOS CI workers to avoid worker crashes/OOM.
 // In CI on linux/windows, prefer Vitest defaults to avoid cross-test interference from lower worker counts.
-const maxWorkers = resolvedOverride ?? (isCI && !isMacOS ? null : macCiWorkers);
+const maxWorkers =
+  resolvedOverride ??
+  (isWindowsLocal ? windowsLocalWorkers : isCI && !isMacOS ? null : macCiWorkers);
 
 const WARNING_SUPPRESSION_FLAGS = [
   "--disable-warning=ExperimentalWarning",
