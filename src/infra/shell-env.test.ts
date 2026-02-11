@@ -22,8 +22,26 @@ describe("shell env fallback", () => {
     ).toBe(15000);
   });
 
-  it("skips when already has an expected key", () => {
+  it("imports only missing expected keys when some keys are already set", () => {
     const env: NodeJS.ProcessEnv = { OPENAI_API_KEY: "set" };
+    const exec = vi.fn(() => Buffer.from("OPENAI_API_KEY=from-shell\0DISCORD_BOT_TOKEN=discord\0"));
+
+    const res = loadShellEnvFallback({
+      enabled: true,
+      env,
+      expectedKeys: ["OPENAI_API_KEY", "DISCORD_BOT_TOKEN"],
+      exec: exec as unknown as Parameters<typeof loadShellEnvFallback>[0]["exec"],
+    });
+
+    expect(res.ok).toBe(true);
+    expect(res.applied).toEqual(["DISCORD_BOT_TOKEN"]);
+    expect(env.OPENAI_API_KEY).toBe("set");
+    expect(env.DISCORD_BOT_TOKEN).toBe("discord");
+    expect(exec).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips when all expected keys are already set", () => {
+    const env: NodeJS.ProcessEnv = { OPENAI_API_KEY: "set", DISCORD_BOT_TOKEN: "discord" };
     const exec = vi.fn(() => Buffer.from(""));
 
     const res = loadShellEnvFallback({

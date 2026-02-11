@@ -55,8 +55,8 @@ export function loadShellEnvFallback(opts: ShellEnvFallbackOptions): ShellEnvFal
     return { ok: true, applied: [], skippedReason: "disabled" };
   }
 
-  const hasAnyKey = opts.expectedKeys.some((key) => Boolean(opts.env[key]?.trim()));
-  if (hasAnyKey) {
+  const missingKeys = opts.expectedKeys.filter((key) => opts.env[key] === undefined);
+  if (missingKeys.length === 0) {
     lastAppliedKeys = [];
     return { ok: true, applied: [], skippedReason: "already-has-keys" };
   }
@@ -87,10 +87,7 @@ export function loadShellEnvFallback(opts: ShellEnvFallbackOptions): ShellEnvFal
   const shellEnv = parseShellEnv(stdout);
 
   const applied: string[] = [];
-  for (const key of opts.expectedKeys) {
-    if (opts.env[key]?.trim()) {
-      continue;
-    }
+  for (const key of missingKeys) {
     const value = shellEnv.get(key);
     if (!value?.trim()) {
       continue;

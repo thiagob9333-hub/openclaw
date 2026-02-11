@@ -165,7 +165,7 @@ function warnIfConfigFromFuture(cfg: OpenClawConfig, logger: Pick<typeof console
 function applyConfigEnv(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): void {
   const entries = collectConfigEnvVars(cfg);
   for (const [key, value] of Object.entries(entries)) {
-    if (env[key]?.trim()) {
+    if (env[key] !== undefined) {
       continue;
     }
     env[key] = value;

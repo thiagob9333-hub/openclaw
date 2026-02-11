@@ -52,6 +52,30 @@ describe("config env vars", () => {
     });
   });
 
+  it("does not override existing empty env vars", async () => {
+    await withTempHome(async (home) => {
+      const configDir = path.join(home, ".openclaw");
+      await fs.mkdir(configDir, { recursive: true });
+      await fs.writeFile(
+        path.join(configDir, "openclaw.json"),
+        JSON.stringify(
+          {
+            env: { vars: { OPENROUTER_API_KEY: "config-key" } },
+          },
+          null,
+          2,
+        ),
+        "utf-8",
+      );
+
+      await withEnvOverride({ OPENROUTER_API_KEY: "" }, async () => {
+        const { loadConfig } = await import("./config.js");
+        loadConfig();
+        expect(process.env.OPENROUTER_API_KEY).toBe("");
+      });
+    });
+  });
+
   it("applies env vars from env.vars when missing", async () => {
     await withTempHome(async (home) => {
       const configDir = path.join(home, ".openclaw");
