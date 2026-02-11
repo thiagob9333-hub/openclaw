@@ -1,6 +1,7 @@
 import type { ReplyToMode } from "../../config/types.js";
 import type { OriginatingChannelType } from "../templating.js";
 import type { ReplyPayload } from "../types.js";
+import { CONNECTION_ERROR_USER_MESSAGE } from "../../agents/pi-embedded-helpers.js";
 import { logVerbose } from "../../globals.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";
@@ -34,9 +35,17 @@ export function buildReplyPayloads(params: {
   accountId?: string;
 }): { replyPayloads: ReplyPayload[]; didLogHeartbeatStrip: boolean } {
   let didLogHeartbeatStrip = params.didLogHeartbeatStrip;
+  // On heartbeat, skip connection-error payloads so we don't send "The connection to the AI service failed..." every interval.
+  const payloadsForSanitize =
+    params.isHeartbeat &&
+    params.payloads.length === 1 &&
+    params.payloads[0].isError &&
+    params.payloads[0].text?.trim() === CONNECTION_ERROR_USER_MESSAGE
+      ? []
+      : params.payloads;
   const sanitizedPayloads = params.isHeartbeat
-    ? params.payloads
-    : params.payloads.flatMap((payload) => {
+    ? payloadsForSanitize
+    : payloadsForSanitize.flatMap((payload) => {
         let text = payload.text;
 
         if (payload.isError && text && isBunFetchSocketError(text)) {

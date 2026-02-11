@@ -85,4 +85,16 @@ describe("command queue", () => {
     expect(waited as number).toBeGreaterThanOrEqual(5);
     expect(queuedAhead).toBe(0);
   });
+
+  it("deduplicates repeated lane task errors in a short window", async () => {
+    const runFailingTask = () =>
+      enqueueCommand(async () => {
+        throw new Error("boom dedupe");
+      });
+
+    await expect(runFailingTask()).rejects.toThrow("boom dedupe");
+    await expect(runFailingTask()).rejects.toThrow("boom dedupe");
+
+    expect(diagnosticMocks.diag.error).toHaveBeenCalledTimes(1);
+  });
 });

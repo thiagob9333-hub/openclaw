@@ -162,7 +162,7 @@ export function createChannelManager(opts: ChannelManagerOptions): ChannelManage
           .catch((err) => {
             const message = formatErrorMessage(err);
             setRuntime(channelId, id, { accountId: id, lastError: message });
-            log.error?.(`[${id}] channel exited: ${message}`);
+            log.error?.(`account ${id} exited: ${message}`);
           })
           .finally(() => {
             store.aborts.delete(id);

@@ -369,32 +369,37 @@ export function attachGatewayWsMessageHandler(params: {
         const isControlUi = connectParams.client.id === GATEWAY_CLIENT_IDS.CONTROL_UI;
         const isWebchat = isWebchatConnect(connectParams);
         if (isControlUi || isWebchat) {
-          const originCheck = checkBrowserOrigin({
-            requestHost,
-            origin: requestOrigin,
-            allowedOrigins: configSnapshot.gateway?.controlUi?.allowedOrigins,
-          });
-          if (!originCheck.ok) {
-            const errorMessage =
-              "origin not allowed (open the Control UI from the gateway host or allow it in gateway.controlUi.allowedOrigins)";
-            setHandshakeState("failed");
-            setCloseCause("origin-mismatch", {
-              origin: requestOrigin ?? "n/a",
-              host: requestHost ?? "n/a",
-              reason: originCheck.reason,
-              client: connectParams.client.id,
-              clientDisplayName: connectParams.client.displayName,
-              mode: connectParams.client.mode,
-              version: connectParams.client.version,
+          // Local non-browser clients (tests, desktop wrappers) may not send an Origin header.
+          // Keep strict browser-origin checks for remote/web requests.
+          const bypassOriginCheck = !requestOrigin && isLocalClient;
+          if (!bypassOriginCheck) {
+            const originCheck = checkBrowserOrigin({
+              requestHost,
+              origin: requestOrigin,
+              allowedOrigins: configSnapshot.gateway?.controlUi?.allowedOrigins,
             });
-            send({
-              type: "res",
-              id: frame.id,
-              ok: false,
-              error: errorShape(ErrorCodes.INVALID_REQUEST, errorMessage),
-            });
-            close(1008, truncateCloseReason(errorMessage));
-            return;
+            if (!originCheck.ok) {
+              const errorMessage =
+                "origin not allowed (open the Control UI from the gateway host or allow it in gateway.controlUi.allowedOrigins)";
+              setHandshakeState("failed");
+              setCloseCause("origin-mismatch", {
+                origin: requestOrigin ?? "n/a",
+                host: requestHost ?? "n/a",
+                reason: originCheck.reason,
+                client: connectParams.client.id,
+                clientDisplayName: connectParams.client.displayName,
+                mode: connectParams.client.mode,
+                version: connectParams.client.version,
+              });
+              send({
+                type: "res",
+                id: frame.id,
+                ok: false,
+                error: errorShape(ErrorCodes.INVALID_REQUEST, errorMessage),
+              });
+              close(1008, truncateCloseReason(errorMessage));
+              return;
+            }
           }
         }
 

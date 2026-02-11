@@ -22,4 +22,11 @@ describe("formatRawAssistantErrorForUi", () => {
       "HTTP 500: Internal Server Error",
     );
   });
+
+  it("formats connection errors with a user-friendly message", () => {
+    const friendly = "The connection to the AI service failed. Please try again.";
+    expect(formatRawAssistantErrorForUi("Connection error.")).toBe(friendly);
+    expect(formatRawAssistantErrorForUi("Connection error")).toBe(friendly);
+    expect(formatRawAssistantErrorForUi("connection refused")).toBe(friendly);
+  });
 });

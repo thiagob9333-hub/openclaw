@@ -21,6 +21,7 @@ openclaw gateway status
 ```
 
 Esperado:
+
 - `Runtime: running`
 - `RPC probe: ok`
 

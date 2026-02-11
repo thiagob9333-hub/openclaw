@@ -19,6 +19,7 @@ import {
   onceMessage,
   startGatewayServer,
   startServerWithClient,
+  testState,
 } from "./test-helpers.js";
 
 installGatewayTestHooks({ scope: "suite" });
@@ -223,6 +224,10 @@ describe("gateway server health/presence", () => {
     const identity = loadOrCreateDeviceIdentity(identityPath);
     const role = "operator";
     const scopes: string[] = [];
+    const gatewayToken =
+      typeof (testState.gatewayAuth as { token?: unknown } | undefined)?.token === "string"
+        ? ((testState.gatewayAuth as { token?: string }).token ?? null)
+        : null;
     const signedAtMs = Date.now();
     const payload = buildDeviceAuthPayload({
       deviceId: identity.deviceId,
@@ -231,7 +236,7 @@ describe("gateway server health/presence", () => {
       role,
       scopes,
       signedAtMs,
-      token: null,
+      token: gatewayToken,
     });
     const ws = await openClient({
       role,

@@ -154,10 +154,12 @@ export async function createWaSocket(
     },
   );
 
-  // Handle WebSocket-level errors to prevent unhandled exceptions from crashing the process
+  // Handle WebSocket-level errors to prevent unhandled exceptions from crashing the process.
+  // Log with explicit WhatsApp context so gateway logs show [whatsapp] and the error is not a bare "Connection error." from the underlying socket.
   if (sock.ws && typeof (sock.ws as unknown as { on?: unknown }).on === "function") {
     sock.ws.on("error", (err: Error) => {
-      sessionLogger.error({ error: String(err) }, "WebSocket error");
+      const msg = String(err?.message ?? err);
+      sessionLogger.error(`WhatsApp Web socket error: ${msg}`, { error: msg });
     });
   }
 

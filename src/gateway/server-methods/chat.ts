@@ -6,6 +6,7 @@ import type { GatewayRequestContext, GatewayRequestHandlers } from "./types.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { resolveThinkingDefault } from "../../agents/model-selection.js";
 import { resolveAgentTimeoutMs } from "../../agents/timeout.js";
+import { isControlCommandMessage } from "../../auto-reply/command-detection.js";
 import { dispatchInboundMessage } from "../../auto-reply/dispatch.js";
 import { createReplyDispatcher } from "../../auto-reply/reply/reply-dispatcher.js";
 import { createReplyPrefixOptions } from "../../channels/reply-prefix.js";
@@ -89,6 +90,7 @@ function ensureTranscriptFile(params: { transcriptPath: string; sessionId: strin
 function appendAssistantTranscriptMessage(params: {
   message: string;
   label?: string;
+  command?: boolean;
   sessionId: string;
   storePath: string | undefined;
   sessionFile?: string;
@@ -144,6 +146,7 @@ function appendAssistantTranscriptMessage(params: {
     api: "openai-responses",
     provider: "openclaw",
     model: "gateway-injected",
+    ...(params.command ? { command: true } : {}),
   };
 
   try {
@@ -463,6 +466,7 @@ export const chatHandlers: GatewayRequestHandlers = {
       const injectThinking = Boolean(
         p.thinking && trimmedMessage && !trimmedMessage.startsWith("/"),
       );
+      const isControlCommand = isControlCommandMessage(parsedMessage, cfg);
       const commandBody = injectThinking ? `/think ${p.thinking} ${parsedMessage}` : parsedMessage;
       const clientInfo = client?.connect?.client;
       // Inject timestamp so agents know the current date/time.
@@ -554,6 +558,7 @@ export const chatHandlers: GatewayRequestHandlers = {
               const sessionId = latestEntry?.sessionId ?? entry?.sessionId ?? clientRunId;
               const appended = appendAssistantTranscriptMessage({
                 message: combinedReply,
+                command: isControlCommand,
                 sessionId,
                 storePath: latestStorePath,
                 sessionFile: latestEntry?.sessionFile,
@@ -570,12 +575,20 @@ export const chatHandlers: GatewayRequestHandlers = {
                   role: "assistant",
                   content: [{ type: "text", text: combinedReply }],
                   timestamp: now,
+                  ...(isControlCommand ? { command: true } : {}),
                   // Keep this compatible with Pi stopReason enums even though this message isn't
                   // persisted to the transcript due to the append failure.
                   stopReason: "stop",
                   usage: { input: 0, output: 0, totalTokens: 0 },
                 };
               }
+            } else if (isControlCommand) {
+              message = {
+                role: "assistant",
+                content: [],
+                timestamp: Date.now(),
+                command: true,
+              };
             }
             broadcastChatFinal({
               context,

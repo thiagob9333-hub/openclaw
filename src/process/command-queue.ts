@@ -23,7 +23,39 @@ type LaneState = {
   draining: boolean;
 };
 
+type LaneLogState = {
+  signature: string;
+  lastLogAt: number;
+  suppressed: number;
+};
+
 const lanes = new Map<string, LaneState>();
+const laneWaitLogState = new Map<string, LaneLogState>();
+const laneErrorLogState = new Map<string, LaneLogState>();
+
+const LANE_WAIT_WARN_DEDUP_MS = 30_000;
+const LANE_TASK_ERROR_DEDUP_MS = 30_000;
+
+function shouldEmitLaneLog(
+  states: Map<string, LaneLogState>,
+  lane: string,
+  signature: string,
+  dedupWindowMs: number,
+): { emit: boolean; suppressedBeforeEmit: number } {
+  const now = Date.now();
+  const existing = states.get(lane);
+  if (!existing || existing.signature !== signature || now - existing.lastLogAt > dedupWindowMs) {
+    const suppressedBeforeEmit = existing?.suppressed ?? 0;
+    states.set(lane, {
+      signature,
+      lastLogAt: now,
+      suppressed: 0,
+    });
+    return { emit: true, suppressedBeforeEmit };
+  }
+  existing.suppressed += 1;
+  return { emit: false, suppressedBeforeEmit: 0 };
+}
 
 function getLaneState(lane: string): LaneState {
   const existing = lanes.get(lane);
@@ -54,9 +86,22 @@ function drainLane(lane: string) {
       const waitedMs = Date.now() - entry.enqueuedAt;
       if (waitedMs >= entry.warnAfterMs) {
         entry.onWait?.(waitedMs, state.queue.length);
-        diag.warn(
-          `lane wait exceeded: lane=${lane} waitedMs=${waitedMs} queueAhead=${state.queue.length}`,
+        const waitLog = shouldEmitLaneLog(
+          laneWaitLogState,
+          lane,
+          `queueAhead=${state.queue.length}`,
+          LANE_WAIT_WARN_DEDUP_MS,
         );
+        if (waitLog.emit) {
+          if (waitLog.suppressedBeforeEmit > 0) {
+            diag.warn(
+              `lane wait exceeded (deduped): lane=${lane} suppressed=${waitLog.suppressedBeforeEmit} windowMs=${LANE_WAIT_WARN_DEDUP_MS}`,
+            );
+          }
+          diag.warn(
+            `lane wait exceeded: lane=${lane} waitedMs=${waitedMs} queueAhead=${state.queue.length}`,
+          );
+        }
       }
       logLaneDequeue(lane, waitedMs, state.queue.length);
       state.active += 1;
@@ -74,9 +119,23 @@ function drainLane(lane: string) {
           state.active -= 1;
           const isProbeLane = lane.startsWith("auth-probe:") || lane.startsWith("session:probe-");
           if (!isProbeLane) {
-            diag.error(
-              `lane task error: lane=${lane} durationMs=${Date.now() - startTime} error="${String(err)}"`,
+            const errorText = String(err);
+            const errorLog = shouldEmitLaneLog(
+              laneErrorLogState,
+              lane,
+              errorText,
+              LANE_TASK_ERROR_DEDUP_MS,
             );
+            if (errorLog.emit) {
+              if (errorLog.suppressedBeforeEmit > 0) {
+                diag.warn(
+                  `lane task error (deduped): lane=${lane} suppressed=${errorLog.suppressedBeforeEmit} windowMs=${LANE_TASK_ERROR_DEDUP_MS}`,
+                );
+              }
+              diag.error(
+                `lane task error: lane=${lane} durationMs=${Date.now() - startTime} error="${errorText}"`,
+              );
+            }
           }
           pump();
           entry.reject(err);

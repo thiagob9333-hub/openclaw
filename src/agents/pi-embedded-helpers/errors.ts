@@ -299,10 +299,27 @@ export function parseApiErrorInfo(raw?: string): ApiErrorInfo | null {
   };
 }
 
+/** User-facing message when the LLM connection fails (e.g. Ollama unreachable). */
+export const CONNECTION_ERROR_USER_MESSAGE =
+  "The connection to the AI service failed. Please try again.";
+
+export function isConnectionErrorMessage(raw: string): boolean {
+  const lower = raw.toLowerCase();
+  return (
+    lower === "connection error." ||
+    lower === "connection error" ||
+    /^connection (refused|reset|failed|timeout)/i.test(raw) ||
+    /econnrefused|econnreset|fetch failed|network error/i.test(lower)
+  );
+}
+
 export function formatRawAssistantErrorForUi(raw?: string): string {
   const trimmed = (raw ?? "").trim();
   if (!trimmed) {
     return "LLM request failed with an unknown error.";
+  }
+  if (isConnectionErrorMessage(trimmed)) {
+    return CONNECTION_ERROR_USER_MESSAGE;
   }
 
   const httpMatch = trimmed.match(HTTP_STATUS_PREFIX_RE);
@@ -385,6 +402,10 @@ export function formatAssistantErrorText(
 
   if (isOverloadedErrorMessage(raw)) {
     return "The AI service is temporarily overloaded. Please try again in a moment.";
+  }
+
+  if (isConnectionErrorMessage(raw)) {
+    return CONNECTION_ERROR_USER_MESSAGE;
   }
 
   if (isBillingErrorMessage(raw)) {

@@ -670,7 +670,7 @@ export async function runEmbeddedAttempt(
         () => {
           if (!isProbeSession) {
             log.warn(
-              `embedded run timeout: runId=${params.runId} sessionId=${params.sessionId} timeoutMs=${params.timeoutMs}`,
+              `embedded run timeout: runId=${params.runId} sessionId=${params.sessionId} timeoutMs=${params.timeoutMs} provider=${params.provider} model=${params.modelId}`,
             );
           }
           abortRun(true);
@@ -681,7 +681,7 @@ export async function runEmbeddedAttempt(
               }
               if (!isProbeSession) {
                 log.warn(
-                  `embedded run abort still streaming: runId=${params.runId} sessionId=${params.sessionId}`,
+                  `embedded run abort still streaming: runId=${params.runId} sessionId=${params.sessionId} provider=${params.provider} model=${params.modelId}`,
                 );
               }
             }, 10_000);
@@ -764,8 +764,8 @@ export async function runEmbeddedAttempt(
           }
           const sessionContext = sessionManager.buildSessionContext();
           activeSession.agent.replaceMessages(sessionContext.messages);
-          log.warn(
-            `Removed orphaned user message to prevent consecutive user turns. ` +
+          log.info(
+            `session history repair: removed orphaned trailing user message to prevent consecutive user turns. ` +
               `runId=${params.runId} sessionId=${params.sessionId}`,
           );
         }

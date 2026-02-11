@@ -5,18 +5,53 @@
   "[javascript]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
-  "[typescriptreact]": {
+  "[javascriptreact]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "[typescript]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
   "[json]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[jsonc]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "typescript.preferences.importModuleSpecifierEnding": "js",
   "typescript.reportStyleChecksAsWarnings": false,
   "typescript.updateImportsOnFileMove.enabled": "always",
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.experimental.useTsgo": true
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "typescript.experimental.useTsgo": true,
+  "terminal.integrated.detectLocale": "auto",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell"
+    }
+  },
+  "terminal.integrated.profiles.linux": {
+    "bash": {
+      "path": "bash",
+      "icon": "terminal-bash"
+    },
+    "zsh": {
+      "path": "zsh"
+    },
+    "fish": {
+      "path": "fish"
+    },
+    "tmux": {
+      "path": "tmux",
+      "icon": "terminal-tmux"
+    },
+    "pwsh": {
+      "path": "pwsh",
+      "icon": "terminal-powershell"
+    }
+  },
+  "powershell.integratedConsole.useLegacyReadLine": true
 }

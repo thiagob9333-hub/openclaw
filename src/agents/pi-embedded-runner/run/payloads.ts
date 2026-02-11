@@ -6,9 +6,11 @@ import { parseReplyDirectives } from "../../../auto-reply/reply/reply-directives
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../../auto-reply/tokens.js";
 import { formatToolAggregate } from "../../../auto-reply/tool-meta.js";
 import {
+  CONNECTION_ERROR_USER_MESSAGE,
   formatAssistantErrorText,
   formatRawAssistantErrorForUi,
   getApiErrorPayloadFingerprint,
+  isConnectionErrorMessage,
   isRawApiErrorPayload,
   normalizeTextForComparison,
 } from "../../pi-embedded-helpers.js";
@@ -180,13 +182,16 @@ export function buildEmbeddedRunPayloads(params: {
     if (!cleanedText && (!mediaUrls || mediaUrls.length === 0) && !audioAsVoice) {
       continue;
     }
+    // If the model echoed a connection error (e.g. Ollama unreachable), show a clear message and mark as error.
+    const isConnectionEcho = isConnectionErrorMessage(cleanedText ?? "");
     replyItems.push({
-      text: cleanedText,
+      text: isConnectionEcho ? CONNECTION_ERROR_USER_MESSAGE : cleanedText,
       media: mediaUrls,
       audioAsVoice,
       replyToId,
       replyToTag,
       replyToCurrent,
+      isError: isConnectionEcho,
     });
   }
 

@@ -168,14 +168,12 @@ export function printDaemonStatus(status: DaemonStatus, opts: { json: boolean })
   }
 
   const runtimeLine = formatRuntimeStatus(service.runtime);
-  const stoppedButRpcReachable =
-    service.loaded && service.runtime?.status === "stopped" && rpc?.ok === true;
+  const stoppedButRpcReachable = service.runtime?.status === "stopped" && rpc?.ok === true;
   if (runtimeLine) {
     const runtimeStatus = service.runtime?.status ?? "unknown";
-    const runtimeColor =
-      stoppedButRpcReachable
-        ? theme.warn
-        : runtimeStatus === "running"
+    const runtimeColor = stoppedButRpcReachable
+      ? theme.warn
+      : runtimeStatus === "running"
         ? theme.success
         : runtimeStatus === "stopped"
           ? theme.error

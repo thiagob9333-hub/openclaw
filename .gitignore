@@ -65,6 +65,10 @@ apps/ios/*.dSYM.zip
 # provisioning profiles (local)
 apps/ios/*.mobileprovision
 
+# VS Code / Cursor auto-generated diagnostics (sensitive paths, user data)
+.vscode/*Diagnostics*.md
+.vscode/##*.md
+
 # Local untracked files
 .local/
 IDENTITY.md

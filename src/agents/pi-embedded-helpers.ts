@@ -7,6 +7,7 @@ export {
 } from "./pi-embedded-helpers/bootstrap.js";
 export {
   BILLING_ERROR_USER_MESSAGE,
+  CONNECTION_ERROR_USER_MESSAGE,
   classifyFailoverReason,
   formatRawAssistantErrorForUi,
   formatAssistantErrorText,
@@ -14,6 +15,7 @@ export {
   isAuthAssistantError,
   isAuthErrorMessage,
   isBillingAssistantError,
+  isConnectionErrorMessage,
   parseApiErrorInfo,
   sanitizeUserFacingText,
   isBillingErrorMessage,
